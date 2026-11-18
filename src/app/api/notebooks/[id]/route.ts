@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
+import { requireAuth } from "@/lib/auth/server";
 import { NOTEBOOK_COLORS, rowToNotebook, UUID_RE, type NotebookRow } from "@/lib/notebookRows";
 
 const NOT_FOUND = () => NextResponse.json({ error: "Notebook not found" }, { status: 404 });
 
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[id]">) {
+  const unauthorized = await requireAuth(_req);
+  if (unauthorized) return unauthorized;
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {
@@ -23,6 +26,8 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[
 }
 
 export async function PUT(request: NextRequest, ctx: RouteContext<"/api/notebooks/[id]">) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {
@@ -50,6 +55,8 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/notebook
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[id]">) {
+  const unauthorized = await requireAuth(_req);
+  if (unauthorized) return unauthorized;
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {

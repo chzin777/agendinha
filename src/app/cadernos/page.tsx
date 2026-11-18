@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookMarked, LayoutGrid, List, Search } from "lucide-react";
+import { BookMarked, LayoutGrid, List } from "lucide-react";
 import { AppShell, Segmented } from "@/components/AppShell";
 import { Modal } from "@/components/Modal";
 import { GoldenButton } from "@/components/GoldenButton";
 import { NotebookForm, type NotebookFormData } from "@/components/NotebookForm";
 import { NotebookCoverCard, NotebookRowItem } from "@/components/NotebookCover";
+import { SearchField } from "@/components/SearchField";
 import { useNotebooks } from "@/hooks/useNotebooks";
+import { matchesSearch, normalizeSearch } from "@/lib/search";
 import type { Notebook } from "@/types";
 
 type ViewMode = "grid" | "list";
@@ -63,9 +65,9 @@ export default function NotebooksPage() {
     }
   };
 
-  const q = query.trim().toLowerCase();
+  const q = normalizeSearch(query);
   const filtered = q
-    ? notebooks.filter((n) => n.name.toLowerCase().includes(q) || (n.description ?? "").toLowerCase().includes(q))
+    ? notebooks.filter((n) => matchesSearch(q, n.name, n.description))
     : notebooks;
 
   return (
@@ -77,20 +79,8 @@ export default function NotebooksPage() {
             {loaded ? `${notebooks.length} ${notebooks.length === 1 ? "caderno" : "cadernos"}` : "Carregando..."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {notebooks.length > 0 && (
-            <label className="relative flex-1 sm:w-64 sm:flex-none">
-              <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <span className="sr-only">Buscar cadernos</span>
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full rounded-full border border-border bg-card py-2.5 pl-10 pr-4 text-base text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 sm:text-sm"
-              />
-            </label>
-          )}
+        <div className="flex min-w-0 items-center gap-2">
+          <SearchField label="Buscar cadernos" value={query} onChange={setQuery} className="flex-1 sm:w-64 sm:flex-none" />
           <Segmented
             className="shrink-0"
             value={view}
@@ -102,6 +92,12 @@ export default function NotebooksPage() {
           />
         </div>
       </div>
+
+      {loaded && !error && q && notebooks.length > 0 && (
+        <p role="status" className="mb-3 text-sm text-muted-foreground">
+          {filtered.length} {filtered.length === 1 ? "caderno encontrado" : "cadernos encontrados"}
+        </p>
+      )}
 
       {!loaded ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

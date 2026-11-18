@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
+import { requireAuth } from "@/lib/auth/server";
 import { rowToPage, UUID_RE, type PageRow } from "@/lib/notebookRows";
 
 const NOT_FOUND = () => NextResponse.json({ error: "Notebook not found" }, { status: 404 });
 
 /** Lists the pages of a notebook (content included, pages are small rich text). */
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[id]/pages">) {
+  const unauthorized = await requireAuth(_req);
+  if (unauthorized) return unauthorized;
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {
@@ -23,6 +26,8 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[
 }
 
 export async function POST(request: NextRequest, ctx: RouteContext<"/api/notebooks/[id]/pages">) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {

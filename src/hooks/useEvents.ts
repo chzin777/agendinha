@@ -14,6 +14,7 @@ async function fetchEvents(): Promise<CalendarEvent[]> {
 export function useEvents() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     fetchEvents()
@@ -23,6 +24,7 @@ export function useEvents() {
       })
       .catch((e) => {
         console.error("[useEvents] Failed to load events:", e);
+        setLoadError(true);
         setMounted(true);
       });
   }, []);
@@ -152,6 +154,7 @@ export function useEvents() {
   return {
     events,
     mounted,
+    loadError,
     addEvent,
     updateEvent,
     deleteEvent,

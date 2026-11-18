@@ -7,11 +7,15 @@ if (!url) {
   process.exit(1);
 }
 
-const schema = readFileSync(new URL("../db/schema.sql", import.meta.url), "utf8");
+const schemas = ["../db/schema.sql", "../db/auth-schema.sql"].map((file) =>
+  readFileSync(new URL(file, import.meta.url), "utf8"),
+);
 const pool = new Pool({ connectionString: url });
 
 try {
-  await pool.query(schema);
+  for (const schema of schemas) {
+    await pool.query(schema);
+  }
   console.log("Schema aplicado com sucesso.");
 } finally {
   await pool.end();

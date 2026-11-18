@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
+import { requireAuth } from "@/lib/auth/server";
 import type { CalendarEvent, EventType } from "@/types";
 
 const VALID_TYPES: EventType[] = [
@@ -35,7 +36,9 @@ function rowToEvent(row: EventRow): CalendarEvent {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   try {
     const rows = await sql`
       SELECT id, title, description, date::text, time::text, type, notified, created_at::text
@@ -51,6 +54,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   try {
     const body = await request.json();
     const { title, description, date, time, type } = body;
@@ -76,6 +81,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   try {
     const body = await request.json();
     const { id, ...updates } = body;
@@ -116,6 +123,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

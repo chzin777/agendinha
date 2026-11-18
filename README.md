@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Busca
+
+Na agenda, a busca encontra eventos de qualquer data pelo título, descrição, tipo, data ou horário. Em cadernos, busca pelo nome e pela descrição do caderno, sem pesquisar o conteúdo das páginas. Ambas ignoram diferenças de maiúsculas e acentos.
+
+Para testar a busca, use Node.js 22.18 ou superior: `node --test scripts/search.test.mjs`.
+
 ## Feriados
 
 O calendário mostra feriados nacionais e de Goiânia, incluindo Sexta-feira da Paixão e Corpus Christi. Pontos facultativos, como Carnaval, não são marcados como feriados.
@@ -11,6 +17,12 @@ Para testar os cálculos de feriados, use Node.js 22.18 ou superior:
 ```bash
 node --test scripts/holidays.test.mjs
 ```
+
+## Autenticação
+
+O acesso à agenda e aos cadernos exige login. Configure `BETTER_AUTH_SECRET` com pelo menos 32 caracteres aleatórios e `BETTER_AUTH_URL` com a URL da aplicação em `.env.local` e também nas variáveis do ambiente de deploy. Mantenha o cadastro público desativado.
+
+Depois de configurar o banco, aplique o schema com `npm run db:migrate` e crie a conta inicial no terminal com `npm run auth:create-user`. O comando solicita o usuário, e-mail e nome; a senha é digitada sem aparecer na tela e tem mínimo de 12 caracteres. O Better Auth armazena somente o hash da senha.
 
 ## Getting Started
 

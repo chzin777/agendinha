@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
+import { requireAuth } from "@/lib/auth/server";
 import { NOTEBOOK_COLORS, rowToNotebook, type NotebookRow } from "@/lib/notebookRows";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   try {
     const rows = await sql`
       SELECT n.id, n.name, n.description, n.color, n.created_at::text, n.updated_at::text,
@@ -20,6 +23,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireAuth(request);
+  if (unauthorized) return unauthorized;
   try {
     const { name, description, color } = await request.json();
     const trimmed = typeof name === "string" ? name.trim() : "";

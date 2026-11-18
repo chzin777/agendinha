@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, Calendar as CalendarIcon, CalendarDays, NotebookPen, Plus } from "lucide-react";
 import { GoldenButton } from "@/components/GoldenButton";
+import { SignOutButton } from "@/components/SignOutButton";
 
 export type AppSection = "agenda" | "cadernos";
 
@@ -83,6 +84,7 @@ export function AppShell({ active, children, fab, back, actions, hideBottomNav }
 
           <div className="flex shrink-0 items-center gap-1.5">
             {actions}
+            <SignOutButton />
             {fab && (
               <div className="hidden lg:block">
                 <GoldenButton onClick={fab.onClick}>
