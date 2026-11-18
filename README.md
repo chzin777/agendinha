@@ -1,5 +1,17 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Feriados
+
+O calendário mostra feriados nacionais e de Goiânia, incluindo Sexta-feira da Paixão e Corpus Christi. Pontos facultativos, como Carnaval, não são marcados como feriados.
+
+A Fundação da Cidade de Goiás é indicada para repartições estaduais. Sua data legal é 26 de julho, mas pode ser transferida por decreto; estão incluídas as transferências conhecidas para [2025](https://legisla.casacivil.go.gov.br/api/v2/pesquisa/legislacoes/110964/pdf) e [2026](https://legisla.casacivil.go.gov.br/pesquisa_legislacao/115759/decreto-numerado-10935). Outras transferências devem ser atualizadas manualmente em `src/lib/holidays.ts`. Confira também as leis municipais sobre [24 de outubro](https://www.goiania.go.gov.br/html/gabinete_civil/sileg/dados/legis/1991/lo_19910619_000006968.html) e [os feriados religiosos](https://feriados.net.br/2026/go/goiania/).
+
+Para testar os cálculos de feriados, use Node.js 22.18 ou superior:
+
+```bash
+node --test scripts/holidays.test.mjs
+```
+
 ## Getting Started
 
 First, run the development server:

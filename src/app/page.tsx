@@ -18,6 +18,7 @@ import { EventCard } from "@/components/EventCard";
 import { GoldenButton } from "@/components/GoldenButton";
 import { GoldenCard } from "@/components/GoldenCard";
 import { AppShell, Segmented } from "@/components/AppShell";
+import { getHolidays } from "@/lib/holidays";
 import {
   TYPE_CONFIG,
   EVENT_TYPE_ORDER,
@@ -69,6 +70,15 @@ export default function HomePage() {
     while (days.length % 7 !== 0) days.push(null);
     return days;
   }, [year, month]);
+
+  const holidaysByDate = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const holiday of getHolidays(year)) {
+      const key = toDateKey(holiday.date);
+      map.set(key, [...(map.get(key) ?? []), holiday.name]);
+    }
+    return map;
+  }, [year]);
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -165,6 +175,10 @@ export default function HomePage() {
   };
 
   const selectedEvents = eventsByDate.get(selectedKey) ?? [];
+  const selectedHolidays = holidaysByDate.get(selectedKey) ?? [];
+  const monthHolidays = [...holidaysByDate].filter(([key]) =>
+    key.startsWith(`${year}-${String(month + 1).padStart(2, "0")}-`)
+  );
   const selectedRelative = relativeDayLabel(selectedKey, todayKey);
   const isViewingCurrentMonth = todayKey.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`);
 
@@ -196,7 +210,7 @@ export default function HomePage() {
             { value: "upcoming", label: "Próximos", icon: ListTodo, badge: upcomingEvents.length },
           ]}
         />
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start [&>*]:min-w-0">
           {/* Calendar */}
           <section className={`${tab === "calendar" ? "block" : "hidden"} lg:block`} aria-label="Calendário">
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -225,7 +239,9 @@ export default function HomePage() {
                 {WEEKDAYS.map((day, i) => (
                   <div
                     key={day}
-                    className="py-1.5 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:py-3 lg:text-xs"
+                    className={`py-1.5 text-center text-[11px] font-semibold uppercase tracking-wider lg:py-3 lg:text-xs ${
+                      i === 0 ? "text-accent-marsala" : i === 6 ? "text-[#315c85]" : "text-muted-foreground"
+                    }`}
                   >
                     <span className="lg:hidden">{WEEKDAYS_SHORT[i]}</span>
                     <span className="hidden lg:inline">{day}</span>
@@ -253,6 +269,8 @@ export default function HomePage() {
                   const isToday = dateKey === todayKey;
                   const isSelected = dateKey === selectedKey;
                   const dayEvents = eventsByDate.get(dateKey) ?? [];
+                  const holidays = holidaysByDate.get(dateKey) ?? [];
+                  const dayColor = idx % 7 === 0 ? "text-accent-marsala" : idx % 7 === 6 ? "text-[#315c85]" : "text-foreground";
 
                   return (
                     <button
@@ -260,7 +278,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => setSelectedKey(dateKey)}
                       onDoubleClick={() => openNewEvent(dateKey)}
-                      aria-label={`${formatLongDate(dateKey)}${dayEvents.length ? `, ${dayEvents.length} evento(s)` : ""}`}
+                      aria-label={`${formatLongDate(dateKey)}${holidays.length ? `, feriado: ${holidays.join(", ")}` : ""}${dayEvents.length ? `, ${dayEvents.length} evento(s)` : ""}`}
                       aria-pressed={isSelected}
                       className={`group relative flex h-12 flex-col items-center justify-start gap-1 rounded-xl pt-1 transition-colors sm:h-14 lg:h-auto lg:min-h-[104px] lg:items-stretch lg:rounded-none lg:border-b lg:border-r lg:border-border lg:p-2 lg:text-left lg:[&:nth-child(7n)]:border-r-0 ${
                         isSelected
@@ -269,12 +287,10 @@ export default function HomePage() {
                       }`}
                     >
                       <span
-                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold lg:h-7 lg:w-7 ${
+                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold lg:h-7 lg:w-7 ${holidays.length ? "ring-2 ring-accent-gold" : ""} ${
                           isToday
                             ? "bg-primary text-primary-foreground shadow-sm"
-                            : isSelected
-                              ? "text-primary"
-                              : "text-foreground"
+                            : dayColor
                         }`}
                       >
                         {day}
@@ -314,8 +330,31 @@ export default function HomePage() {
               </div>
             </div>
 
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium">
+              <span className="text-[#315c85]">Sábado</span>
+              <span className="text-accent-marsala">Domingo</span>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <span className="h-3 w-3 rounded-full ring-2 ring-accent-gold" aria-hidden="true" />
+                Feriado
+              </span>
+            </div>
+            {monthHolidays.length > 0 && (
+              <div className="mt-3 rounded-xl border border-accent-gold/40 bg-card p-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Feriados do mês</h3>
+                <ul className="mt-2 space-y-1">
+                  {monthHolidays.map(([key, names]) => (
+                    <li key={key}>
+                      <button type="button" onClick={() => setSelectedKey(key)} className="text-left text-sm text-foreground hover:text-primary">
+                        <span className="font-semibold text-accent-marsala">{key.slice(-2)}</span>{" · "}{names.join(", ")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Legend */}
-            <div className="no-scrollbar -mx-3 mt-3 flex gap-2 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0">
+            <div className="mt-3 flex flex-wrap gap-2">
               {EVENT_TYPE_ORDER.map((type) => {
                 const config = TYPE_CONFIG[type];
                 return (
@@ -356,6 +395,12 @@ export default function HomePage() {
                     <Plus size={18} />
                   </button>
                 </div>
+
+                {selectedHolidays.length > 0 && (
+                  <div className="mb-3 rounded-xl border border-accent-gold/40 bg-accent-gold/10 px-3 py-2 text-sm text-foreground">
+                    <span className="font-semibold">Feriado: </span>{selectedHolidays.join(", ")}
+                  </div>
+                )}
 
                 {selectedEvents.length === 0 ? (
                   <button

@@ -47,6 +47,7 @@ body {
   position: relative;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+  overflow-x: clip;
 }
 
 button {
