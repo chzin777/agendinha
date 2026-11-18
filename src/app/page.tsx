@@ -17,6 +17,7 @@ import { EventForm } from "@/components/EventForm";
 import { EventCard } from "@/components/EventCard";
 import { GoldenButton } from "@/components/GoldenButton";
 import { GoldenCard } from "@/components/GoldenCard";
+import { AppShell, Segmented } from "@/components/AppShell";
 import {
   TYPE_CONFIG,
   EVENT_TYPE_ORDER,
@@ -168,40 +169,33 @@ export default function HomePage() {
   const isViewingCurrentMonth = todayKey.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`);
 
   return (
-    <div className="min-h-dvh bg-background">
-      {/* Top app bar */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:h-10 sm:w-10">
-              <CalendarIcon size={19} />
-            </div>
-            <div className="min-w-0 leading-tight">
-              <h1 className="truncate text-lg font-bold tracking-tight text-foreground sm:text-xl">Agendinha</h1>
-              <p className="truncate text-[11px] text-muted-foreground sm:text-xs">Sua agenda acadêmica</p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {!isViewingCurrentMonth && (
-              <button
-                type="button"
-                onClick={goToToday}
-                className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-muted lg:hidden"
-              >
-                Hoje
-              </button>
-            )}
-            <div className="hidden lg:block">
-              <GoldenButton onClick={() => openNewEvent(selectedKey)}>
-                <Plus size={16} />
-                Novo evento
-              </GoldenButton>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 lg:pb-12 lg:pt-8">
+    <AppShell
+      active="agenda"
+      fab={{ label: "Novo evento", onClick: () => openNewEvent(tab === "calendar" ? selectedKey : todayKey) }}
+      actions={
+        !isViewingCurrentMonth && (
+          <button
+            type="button"
+            onClick={() => {
+              goToToday();
+              setTab("calendar");
+            }}
+            className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-muted lg:hidden"
+          >
+            Hoje
+          </button>
+        )
+      }
+    >
+        <Segmented
+          className="mb-4 lg:hidden"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "calendar", label: "Calendário", icon: CalendarDays },
+            { value: "upcoming", label: "Próximos", icon: ListTodo, badge: upcomingEvents.length },
+          ]}
+        />
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           {/* Calendar */}
           <section className={`${tab === "calendar" ? "block" : "hidden"} lg:block`} aria-label="Calendário">
@@ -448,56 +442,6 @@ export default function HomePage() {
             </section>
           </aside>
         </div>
-      </main>
-
-      {/* Mobile bottom navigation */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
-        aria-label="Navegação"
-      >
-        <div className="mx-auto grid h-16 max-w-md grid-cols-3 items-center">
-          <button
-            type="button"
-            onClick={() => setTab("calendar")}
-            aria-current={tab === "calendar" ? "page" : undefined}
-            className={`flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
-              tab === "calendar" ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
-            <CalendarDays size={22} strokeWidth={tab === "calendar" ? 2.4 : 2} />
-            Calendário
-          </button>
-
-          <div className="flex justify-center">
-            <GoldenButton
-              onClick={() => openNewEvent(tab === "calendar" ? selectedKey : todayKey)}
-              aria-label="Novo evento"
-              className="!h-14 !w-14 -translate-y-4 !rounded-full !p-0 shadow-lg"
-            >
-              <Plus size={26} />
-            </GoldenButton>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setTab("upcoming")}
-            aria-current={tab === "upcoming" ? "page" : undefined}
-            className={`relative flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
-              tab === "upcoming" ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
-            <span className="relative">
-              <ListTodo size={22} strokeWidth={tab === "upcoming" ? 2.4 : 2} />
-              {upcomingEvents.length > 0 && (
-                <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-marsala px-1 text-[10px] font-bold leading-none text-accent-marsala-foreground">
-                  {upcomingEvents.length > 9 ? "9+" : upcomingEvents.length}
-                </span>
-              )}
-            </span>
-            Próximos
-          </button>
-        </div>
-      </nav>
 
       {/* Add Event */}
       <Modal open={modalOpen} onClose={closeNewEvent} title="Novo evento">
@@ -532,6 +476,6 @@ export default function HomePage() {
           </div>
         </div>
       </Modal>
-    </div>
+    </AppShell>
   );
 }

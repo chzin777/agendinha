@@ -23,3 +23,25 @@ export interface NotificationPayload {
 export interface NotificationChannel {
   send(payload: NotificationPayload): Promise<boolean>;
 }
+export type NotebookColor = "primary" | "gold" | "marsala" | "slate" | "teal" | "plum";
+
+export interface Notebook {
+  id: string;
+  name: string;
+  description?: string;
+  color: NotebookColor;
+  pageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotebookPage {
+  id: string;
+  notebookId: string;
+  title: string;
+  /** Sanitized rich-text HTML */
+  content: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
