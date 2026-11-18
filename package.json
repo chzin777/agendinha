@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
+    "db:enforce-ownership": "node --env-file=.env.local scripts/migrate.mjs --enforce-ownership",
     "auth:create-user": "node --env-file=.env.local --import tsx scripts/create-user.ts"
   },
   "dependencies": {

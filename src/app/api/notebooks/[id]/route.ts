@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
-import { requireAuth } from "@/lib/auth/server";
+import { getSession } from "@/lib/auth/server";
 import { NOTEBOOK_COLORS, rowToNotebook, UUID_RE, type NotebookRow } from "@/lib/notebookRows";
 
 const NOT_FOUND = () => NextResponse.json({ error: "Notebook not found" }, { status: 404 });
 
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[id]">) {
-  const unauthorized = await requireAuth(_req);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(_req.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {
@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[
       SELECT n.id, n.name, n.description, n.color, n.created_at::text, n.updated_at::text,
              (SELECT COUNT(*)::int FROM notebook_pages p WHERE p.notebook_id = n.id) AS page_count
       FROM notebooks n
-      WHERE n.id = ${id}
+      WHERE n.id = ${id} AND n.owner_id = ${session.user.id}
     `;
     if (rows.length === 0) return NOT_FOUND();
     return NextResponse.json(rowToNotebook(rows[0] as unknown as NotebookRow));
@@ -26,8 +26,8 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[
 }
 
 export async function PUT(request: NextRequest, ctx: RouteContext<"/api/notebooks/[id]">) {
-  const unauthorized = await requireAuth(request);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(request.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {
@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/notebook
     const rows = await sql`
       UPDATE notebooks
       SET name = ${trimmed.slice(0, 120)}, description = ${desc}, color = ${safeColor}, updated_at = now()
-      WHERE id = ${id}
+      WHERE id = ${id} AND owner_id = ${session.user.id}
       RETURNING id, name, description, color, created_at::text, updated_at::text,
                 (SELECT COUNT(*)::int FROM notebook_pages p WHERE p.notebook_id = notebooks.id) AS page_count
     `;
@@ -55,12 +55,12 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/notebook
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteContext<"/api/notebooks/[id]">) {
-  const unauthorized = await requireAuth(_req);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(_req.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
   if (!UUID_RE.test(id)) return NOT_FOUND();
   try {
-    const rows = await sql`DELETE FROM notebooks WHERE id = ${id} RETURNING id`;
+    const rows = await sql`DELETE FROM notebooks WHERE id = ${id} AND owner_id = ${session.user.id} RETURNING id`;
     if (rows.length === 0) return NOT_FOUND();
     return NextResponse.json({ success: true });
   } catch (e) {

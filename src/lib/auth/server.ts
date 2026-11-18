@@ -58,10 +58,3 @@ export const auth = betterAuth({
 export async function getSession(headers: Headers) {
   return auth.api.getSession({ headers });
 }
-
-export async function requireAuth(request: Request): Promise<Response | null> {
-  const session = await getSession(request.headers);
-  return session
-    ? null
-    : Response.json({ error: "Unauthorized" }, { status: 401 });
-}

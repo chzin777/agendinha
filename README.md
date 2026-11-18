@@ -24,6 +24,8 @@ O acesso à agenda e aos cadernos exige login. Configure `BETTER_AUTH_SECRET` co
 
 Depois de configurar o banco, aplique o schema com `npm run db:migrate` e crie a conta inicial no terminal com `npm run auth:create-user`. O comando solicita o usuário, e-mail e nome; a senha é digitada sem aparecer na tela e tem mínimo de 12 caracteres. O Better Auth armazena somente o hash da senha.
 
+Eventos e cadernos pertencem à conta que os criou; as páginas pertencem ao dono do caderno. A migração atribui registros antigos sem dono à conta `binha`. Se esses registros existirem, ela precisa estar cadastrada antes de executar a migração. Após atualizar a aplicação em produção, execute `npm run db:enforce-ownership` para vincular eventuais registros criados durante o deploy e exigir um dono em cada registro.
+
 ## Getting Started
 
 First, run the development server:

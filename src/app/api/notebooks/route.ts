@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
-import { requireAuth } from "@/lib/auth/server";
+import { getSession } from "@/lib/auth/server";
 import { NOTEBOOK_COLORS, rowToNotebook, type NotebookRow } from "@/lib/notebookRows";
 
 export async function GET(request: NextRequest) {
-  const unauthorized = await requireAuth(request);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(request.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const rows = await sql`
       SELECT n.id, n.name, n.description, n.color, n.created_at::text, n.updated_at::text,
              COUNT(p.id)::int AS page_count
       FROM notebooks n
       LEFT JOIN notebook_pages p ON p.notebook_id = n.id
+      WHERE n.owner_id = ${session.user.id}
       GROUP BY n.id
       ORDER BY n.updated_at DESC
     `;
@@ -23,8 +24,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const unauthorized = await requireAuth(request);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(request.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { name, description, color } = await request.json();
     const trimmed = typeof name === "string" ? name.trim() : "";
@@ -35,8 +36,8 @@ export async function POST(request: NextRequest) {
     const desc = typeof description === "string" && description.trim() ? description.trim() : null;
 
     const rows = await sql`
-      INSERT INTO notebooks (name, description, color)
-      VALUES (${trimmed.slice(0, 120)}, ${desc ? desc.slice(0, 500) : null}, ${safeColor})
+      INSERT INTO notebooks (name, description, color, owner_id)
+      VALUES (${trimmed.slice(0, 120)}, ${desc ? desc.slice(0, 500) : null}, ${safeColor}, ${session.user.id})
       RETURNING id, name, description, color, created_at::text, updated_at::text, 0 AS page_count
     `;
     return NextResponse.json(rowToNotebook(rows[0] as unknown as NotebookRow), { status: 201 });

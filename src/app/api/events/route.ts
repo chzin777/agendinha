@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
-import { requireAuth } from "@/lib/auth/server";
+import { getSession } from "@/lib/auth/server";
 import type { CalendarEvent, EventType } from "@/types";
 
 const VALID_TYPES: EventType[] = [
@@ -37,12 +37,13 @@ function rowToEvent(row: EventRow): CalendarEvent {
 }
 
 export async function GET(request: NextRequest) {
-  const unauthorized = await requireAuth(request);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(request.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const rows = await sql`
       SELECT id, title, description, date::text, time::text, type, notified, created_at::text
       FROM events
+      WHERE owner_id = ${session.user.id}
       ORDER BY date ASC, time ASC NULLS LAST
     `;
     const events = (rows as unknown as EventRow[]).map(rowToEvent);
@@ -54,8 +55,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const unauthorized = await requireAuth(request);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(request.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await request.json();
     const { title, description, date, time, type } = body;
@@ -68,8 +69,8 @@ export async function POST(request: NextRequest) {
     }
 
     const rows = await sql`
-      INSERT INTO events (title, description, date, time, type)
-      VALUES (${title}, ${description ?? null}, ${date}, ${time ?? null}, ${type})
+      INSERT INTO events (title, description, date, time, type, owner_id)
+      VALUES (${title}, ${description ?? null}, ${date}, ${time ?? null}, ${type}, ${session.user.id})
       RETURNING id, title, description, date::text, time::text, type, notified, created_at::text
     `;
     const event = rowToEvent(rows[0] as unknown as EventRow);
@@ -81,8 +82,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const unauthorized = await requireAuth(request);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(request.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await request.json();
     const { id, ...updates } = body;
@@ -107,7 +108,9 @@ export async function PUT(request: NextRequest) {
     }
 
     vals.push(id);
-    const query = `UPDATE events SET ${sets.join(", ")} WHERE id = $${vals.length} RETURNING id, title, description, date::text, time::text, type, notified, created_at::text`;
+    const idPosition = vals.length;
+    vals.push(session.user.id);
+    const query = `UPDATE events SET ${sets.join(", ")} WHERE id = $${idPosition} AND owner_id = $${vals.length} RETURNING id, title, description, date::text, time::text, type, notified, created_at::text`;
 
     const rows = await sql.query(query, vals) as unknown as EventRow[];
     if (!rows || rows.length === 0) {
@@ -123,8 +126,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const unauthorized = await requireAuth(request);
-  if (unauthorized) return unauthorized;
+  const session = await getSession(request.headers);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -133,7 +136,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id query parameter is required" }, { status: 400 });
     }
 
-    const rows = await sql`DELETE FROM events WHERE id = ${id} RETURNING id`;
+    const rows = await sql`DELETE FROM events WHERE id = ${id} AND owner_id = ${session.user.id} RETURNING id`;
     if ((rows as unknown[]).length === 0) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
