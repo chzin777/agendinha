@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { CalendarEvent } from "@/types";
 import { sendNotification, formatEventMessage } from "@/lib/notifications";
+import { toDateKey } from "@/lib/eventTypes";
 
 async function fetchEvents(): Promise<CalendarEvent[]> {
   const res = await fetch("/api/events");
@@ -31,7 +32,7 @@ export function useEvents() {
     if (!mounted) return;
 
     const checkNotifications = async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = toDateKey(new Date());
       const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
       for (const event of events) {
@@ -133,7 +134,7 @@ export function useEvents() {
 
   useEffect(() => {
     if (mounted) {
-      todayRef.current = new Date().toISOString().split("T")[0];
+      todayRef.current = toDateKey(new Date());
     }
   }, [mounted]);
 
